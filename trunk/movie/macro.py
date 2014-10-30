@@ -5,6 +5,8 @@
     Embeds various online movies.
 """
 
+from urlparse import urlparse, urlunparse
+
 from genshi.builder import tag
 from trac.core import TracError
 from trac.core import implements
@@ -12,7 +14,6 @@ from trac.resource import Resource, get_resource_url
 from trac.web.chrome import ITemplateProvider, add_script
 from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
-from urlparse import urlparse, urlunparse
 
 
 EMBED_COUNT = '_moviemacro_embed_count'
