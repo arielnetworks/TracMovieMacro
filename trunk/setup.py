@@ -17,7 +17,7 @@ then reference it as htdocs://site/filename.flv
 '''
 
 setup(
-    name = 'MovieMacro',
+    name = 'TracMovieMacro',
     version = '0.2',
     packages = ['movie'],
     package_data = {'movie': ['htdocs/img/*.jpg',
