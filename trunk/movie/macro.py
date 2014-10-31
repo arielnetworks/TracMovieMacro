@@ -83,11 +83,7 @@ class MovieMacro(WikiMacroBase):
         embed_count += 1
         setattr(formatter, EMBED_COUNT, embed_count)
 
-        flowplayer_embedded = getattr(formatter, FLOWPLAYER_EMBEDDED, False)
-
         url = self._get_absolute_url(formatter.req, url)
-        src = self._get_absolute_url(formatter.req, kwargs.pop('splash', 'htdocs://movie/img/black.jpg'))
-
         scheme, netloc, path, params, query, fragment = urlparse(url)
 
         try:
@@ -103,87 +99,99 @@ class MovieMacro(WikiMacroBase):
         }
 
         if netloc == 'www.youtube.com' or netloc == 'www.youtube-nocookie.com':
-            query_dict = xform_query(query)
-            video = query_dict.get('v')
-
-            url = urlunparse((scheme, netloc, '/v/%s' % video, '', '', ''))
-
-            width = kwargs.pop('width', style_dict.get('width', '425px'))
-            height = kwargs.pop('height', style_dict.get('height', '344px'))
-
-            style.update({
-                'width': width,
-                'height': height,
-            })
-
-            return tag.object(tag.param(name='movie', value=url),
-                              tag.param(name='allowFullScreen', value='true'),
-                              tag.embed(src=url, type='application/x-shockwave-flash', allowfullscreen='true', width=width, height=height),
-                              style=xform_style(style))
+            return self.embed_youtube(scheme, netloc, path, params, query,
+                                      fragment, kwargs, style_dict, style)
 
         if netloc == 'www.metacafe.com':
-            parts = path.split('/')
-            try:
-                path = '/fplayer/%s/%s.swf' % (parts[2], parts[3])
-            except:
-                raise TracError("Non-standard URL, don't know how to process it, file a ticket please.")
+            return self.embed_metacafe(scheme, netloc, path, params, query,
+                                       fragment, kwargs, style_dict, style)
 
-            url = urlunparse((scheme, netloc, path, '', '', ''))
-
-            width = kwargs.pop('width', style_dict.get('width', '400px'))
-            height = kwargs.pop('height', style_dict.get('height', '345px'))
-
-            style.update({
-                'width': width,
-                'height': height,
-            })
-
-            return tag.embed(src=url,
-                             wmode='transparent',
-                             pluginspage='http://www.macromedia.com/go/getflashplayer',
-                             type='application/x-shockwave-flash',
-                             style=xform_style(style))
-
-        # Requested by Zach, #4188.
         if netloc in ('vimeo.com', 'www.vimeo.com'):
-            parts = path.split('/')
-
-            while '' in parts:
-                parts.remove('')
-
-            path = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1' % parts[0]
-            url = urlunparse((scheme, netloc, path, '', '', ''))
-
-            width = kwargs.pop('width', style_dict.get('width', '640px'))
-            height = kwargs.pop('height', style_dict.get('height', '401px'))
-
-            style.update({
-                'width': width,
-                'height': height,
-            })
-
-            return tag.object(tag.param(name='movie', value=url),
-                              tag.param(name='allowfullscreen', value='true'),
-                              tag.param(name='allowscriptaccess', value='always'),
-                              tag.embed(src=url, type='application/x-shockwave-flash', allowfullscreen='true', allowscriptaccess='always', width=width, height=height),
-                              style=xform_style(style))
+            return self.embed_vimeo(scheme, netloc, path, params, query,
+                                    fragment, kwargs, style_dict, style)
 
         # Local movies.
-        tags = []
+        return self.embed_player(url, kwargs, style_dict, style, formatter)
 
-        if not flowplayer_embedded:
+    def embed_youtube(self, scheme, netloc, path, params, query, fragment,
+                      kwargs, style_dict, style):
+        query_dict = xform_query(query)
+        video = query_dict.get('v')
+
+        url = urlunparse((scheme, netloc, '/v/%s' % video, '', '', ''))
+
+        width = kwargs.pop('width', style_dict.get('width', '425px'))
+        height = kwargs.pop('height', style_dict.get('height', '344px'))
+
+        style.update({
+            'width': width,
+            'height': height,
+        })
+
+        return tag.object(tag.param(name='movie', value=url),
+                          tag.param(name='allowFullScreen', value='true'),
+                          tag.embed(src=url, type='application/x-shockwave-flash', allowfullscreen='true', width=width, height=height),
+                          style=xform_style(style))
+
+    def embed_metacafe(self, scheme, netloc, path, params, query, fragment,
+                       kwargs, style_dict, style):
+        parts = path.split('/')
+        try:
+            path = '/fplayer/%s/%s.swf' % (parts[2], parts[3])
+        except:
+            raise TracError("Non-standard URL, don't know how to process it, file a ticket please.")
+
+        url = urlunparse((scheme, netloc, path, '', '', ''))
+
+        width = kwargs.pop('width', style_dict.get('width', '400px'))
+        height = kwargs.pop('height', style_dict.get('height', '345px'))
+
+        style.update({
+            'width': width,
+            'height': height,
+        })
+
+        return tag.embed(src=url,
+                         wmode='transparent',
+                         pluginspage='http://www.macromedia.com/go/getflashplayer',
+                         type='application/x-shockwave-flash',
+                         style=xform_style(style))
+
+    def embed_vimeo(self, scheme, netloc, path, params, query, fragment,
+                    kwargs, style_dict, style):
+        parts = path.split('/')
+
+        while '' in parts:
+            parts.remove('')
+
+        path = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1' % parts[0]
+        url = urlunparse((scheme, netloc, path, '', '', ''))
+
+        width = kwargs.pop('width', style_dict.get('width', '640px'))
+        height = kwargs.pop('height', style_dict.get('height', '401px'))
+
+        style.update({
+            'width': width,
+            'height': height,
+        })
+
+        return tag.object(tag.param(name='movie', value=url),
+                          tag.param(name='allowfullscreen', value='true'),
+                          tag.param(name='allowscriptaccess', value='always'),
+                          tag.embed(src=url, type='application/x-shockwave-flash', allowfullscreen='true', allowscriptaccess='always', width=width, height=height),
+                          style=xform_style(style))
+
+    def embed_player(self, url, kwargs, style_dict, style, formatter):
+        tags = []
+        if not getattr(formatter, FLOWPLAYER_EMBEDDED, False):
             add_script(formatter.req, 'movie/js/flashembed.min.js')
             add_script(formatter.req, 'movie/js/flow.embed.js')
-
             script = '''
                 $(function() {
-
                     $("a.flowplayer").flowembed("%s",  {initialScale:'scale'});
                 });
             ''' % self._get_absolute_url(formatter.req, 'htdocs://movie/swf/FlowPlayerDark.swf')
-
             tags.append(tag.script(script))
-
             setattr(formatter, FLOWPLAYER_EMBEDDED, True)
 
         width = kwargs.pop('width', style_dict.get('width', '320px'))
@@ -198,9 +206,8 @@ class MovieMacro(WikiMacroBase):
             style.pop('clear')
 
         kwargs = {'style': xform_style(style)}
-
+        src = self._get_absolute_url(formatter.req, kwargs.pop('splash', 'htdocs://movie/img/black.jpg'))
         tags.append(tag.a(tag.img(src=src, **kwargs), class_='flowplayer', href=url, **kwargs))
-
         return ''.join([str(i) for i in tags])
 
     # ITemplateProvider methods
