@@ -15,51 +15,11 @@ from trac.web.chrome import ITemplateProvider, add_script
 from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
 
+from utils import string_keys, xform_style, xform_query
+
 
 EMBED_COUNT = '_moviemacro_embed_count'
 FLOWPLAYER_EMBEDDED = '_moviemacro_flowplayer_embedded'
-
-
-def string_keys(d):
-    """ Convert unicode keys into string keys, suiable for func(**d) use.
-    """
-    sdict = {}
-    for key, value in d.items():
-        sdict[str(key)] = value
-
-    return sdict
-
-
-def xform_style(style):
-    """ Convert between a style-string and a style-dictionary.
-    """
-    if isinstance(style, dict):
-        result = '; '.join(['%s: %s' % (k, v) for k, v in style.items()])
-        if result:
-            result += ';'
-    else:
-        result = style.split(';')
-        while '' in result:
-            result.remove('')
-
-        result = dict((s.strip() for s in i.split(':', 1)) for i in result)
-
-    return result
-
-
-def xform_query(query):
-    """ Convert between a query-string and a query-dictionary.
-    """
-    if isinstance(query, dict):
-        result = '&'.join(['%s=%s' % (k, v) for k, v in query.items()])
-    else:
-        result = query.split('&')
-        while '' in result:
-            result.remove('')
-
-        result = dict((s.strip() for s in i.split('=', 1)) for i in result)
-
-    return result
 
 
 class MovieMacro(WikiMacroBase):
