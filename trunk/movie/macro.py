@@ -4,7 +4,7 @@
 
     Embeds various online movies.
 """
-
+import mimetypes
 from urlparse import urlparse, urlunparse
 
 from genshi.builder import tag
@@ -19,8 +19,20 @@ from model import MovieMacroConfig
 from utils import string_keys, xform_style, xform_query
 
 
+SWF_MIME_TYPE = mimetypes.types_map.get('.swf')
+
 EMBED_COUNT = '_moviemacro_embed_count'
 FLOWPLAYER_EMBEDDED = '_moviemacro_flowplayer_embedded'
+
+URL_GET_FLASH_PLAYER = 'http://get.adobe.com/jp/flashplayer/'
+
+SWF_PATH_METACAFE = '/fplayer/%s/%s.swf'
+SWF_PATH_VIMEO = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;'\
+                 'show_title=1&amp;show_byline=1&amp;'\
+                 'show_portrait=0&amp;color=&amp;fullscreen=1'
+SWF_PATH_FLOWPLAYER = 'htdocs://movie/swf/FlowPlayerDark.swf'
+
+DEFAULT_SPLASH_IMAGE = 'htdocs://movie/img/black.jpg'
 
 
 class MovieMacro(WikiMacroBase):
@@ -63,18 +75,18 @@ class MovieMacro(WikiMacroBase):
         }
 
         if netloc in ('www.youtube.com', 'www.youtube-nocookie.com'):
-            return self.embed_youtube(scheme, netloc, path, params, query, style)
+            return self.embed_youtube(scheme, netloc, path, query, style)
 
         if netloc == 'www.metacafe.com':
-            return self.embed_metacafe(scheme, netloc, path, params, query, style)
+            return self.embed_metacafe(scheme, netloc, path, query, style)
 
         if netloc in ('vimeo.com', 'www.vimeo.com'):
-            return self.embed_vimeo(scheme, netloc, path, params, query, style)
+            return self.embed_vimeo(scheme, netloc, path, query, style)
 
         # Local movies.
         return self.embed_player(url, kwargs, style, formatter)
 
-    def embed_youtube(self, scheme, netloc, path, params, query, style):
+    def embed_youtube(self, scheme, netloc, path, query, style):
         query_dict = xform_query(query)
         video = query_dict.get('v')
         url = urlunparse((scheme, netloc, '/v/%s' % video, '', '', ''))
@@ -82,35 +94,37 @@ class MovieMacro(WikiMacroBase):
                           tag.param(name='allowFullScreen', value='true'),
                           tag.embed(
                               src=url,
-                              type='application/x-shockwave-flash',
+                              type=SWF_MIME_TYPE,
                               allowfullscreen='true',
                               width=style['width'],
                               height=style['height']),
                           style=xform_style(style))
 
-    def embed_metacafe(self, scheme, netloc, path, params, query, style):
+    def embed_metacafe(self, scheme, netloc, path, query, style):
         parts = path.split('/')
         try:
-            path = '/fplayer/%s/%s.swf' % (parts[2], parts[3])
+            path = SWF_PATH_METACAFE % (parts[2], parts[3])
         except:
-            raise TracError("Non-standard URL, don't know how to process it, file a ticket please.")
+            msg = "Non-standard URL, "\
+                  "don't know how to process it, file a ticket please."
+            raise TracError(msg)
         url = urlunparse((scheme, netloc, path, '', '', ''))
         return tag.embed(src=url,
                          wmode='transparent',
-                         pluginspage='http://www.macromedia.com/go/getflashplayer',
-                         type='application/x-shockwave-flash',
+                         pluginspage=URL_GET_FLASH_PLAYER,
+                         type=SWF_MIME_TYPE,
                          style=xform_style(style))
 
-    def embed_vimeo(self, scheme, netloc, path, params, query, style):
+    def embed_vimeo(self, scheme, netloc, path, query, style):
         parts = filter(None, path.split('/'))
-        path = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1' % parts[0]
+        path = SWF_PATH_VIMEO % parts[0]
         url = urlunparse((scheme, netloc, path, '', '', ''))
         return tag.object(tag.param(name='movie', value=url),
                           tag.param(name='allowfullscreen', value='true'),
                           tag.param(name='allowscriptaccess', value='always'),
                           tag.embed(
                               src=url,
-                              type='application/x-shockwave-flash',
+                              type=SWF_MIME_TYPE,
                               allowfullscreen='true',
                               allowscriptaccess='always',
                               width=style['width'],
@@ -122,11 +136,11 @@ class MovieMacro(WikiMacroBase):
         if not getattr(formatter, FLOWPLAYER_EMBEDDED, False):
             add_script(formatter.req, 'movie/js/flashembed.min.js')
             add_script(formatter.req, 'movie/js/flow.embed.js')
-            script = '''
+            script = """
                 $(function() {
-                    $("a.flowplayer").flowembed("%s",  {initialScale:'scale'});
+                    $('a.flowplayer').flowembed('%s',  {initialScale:'scale'});
                 });
-            ''' % self._get_absolute_url(formatter.req, 'htdocs://movie/swf/FlowPlayerDark.swf')
+            """ % self._get_absolute_url(formatter.req, SWF_PATH_FLOWPLAYER)
             tags.append(tag.script(script))
             setattr(formatter, FLOWPLAYER_EMBEDDED, True)
 
@@ -134,8 +148,16 @@ class MovieMacro(WikiMacroBase):
             style.pop('clear')
 
         kwargs = {'style': xform_style(style)}
-        src = self._get_absolute_url(formatter.req, kwargs.pop('splash', 'htdocs://movie/img/black.jpg'))
-        tags.append(tag.a(tag.img(src=src, **kwargs), class_='flowplayer', href=url, **kwargs))
+        src = self._get_absolute_url(
+            formatter.req, kwargs.pop('splash', DEFAULT_SPLASH_IMAGE))
+        tags.append(
+            tag.a(
+                tag.img(src=src, **kwargs),
+                class_='flowplayer',
+                href=url,
+                **kwargs
+            )
+        )
         return ''.join([str(i) for i in tags])
 
     # ITemplateProvider methods
@@ -181,6 +203,7 @@ class MovieMacro(WikiMacroBase):
 
         if scheme in ('wiki', 'ticket'):
             resource = Resource(scheme, netloc).child('attachment', path)
-            return get_resource_url(self.env, resource, req.abs_href, format='raw')
+            return get_resource_url(self.env, resource, req.abs_href,
+                                    format='raw')
 
         return url
