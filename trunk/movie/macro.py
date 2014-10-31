@@ -21,9 +21,6 @@ from utils import string_keys, xform_style, xform_query
 
 SWF_MIME_TYPE = mimetypes.types_map.get('.swf')
 
-EMBED_COUNT = '_moviemacro_embed_count'
-FLOWPLAYER_EMBEDDED = '_moviemacro_flowplayer_embedded'
-
 URL_GET_FLASH_PLAYER = 'http://get.adobe.com/jp/flashplayer/'
 
 EMBED_PATH_METACAFE = '/embed/%s/'
@@ -39,26 +36,22 @@ class MovieMacro(WikiMacroBase):
     """ Embed online movies from YouTube, GoogleVideo and MetaCafe, and local
         movies via FlowPlayer.
     """
-
     implements(ITemplateProvider)
+
+    EMBED_COUNT = '_moviemacro_embed_count'
+    FLOWPLAYER_EMBEDDED = '_moviemacro_flowplayer_embedded'
 
     # IWikiMacroProvider methods
     def expand_macro(self, formatter, name, content):
         args, kwargs = parse_args(content, strict=True)
-        kwargs = string_keys(kwargs)
-
-        if len(args) >= 1:
-            url = args[0]
-        elif len(args) == 0:
+        if len(args) == 0:
             raise TracError('URL to a movie at least required.')
 
-        embed_count = getattr(formatter, EMBED_COUNT, 0)
-        embed_count += 1
-        setattr(formatter, EMBED_COUNT, embed_count)
-
-        url = self._get_absolute_url(formatter.req, url)
+        self._increment_embed_count(formatter)
+        url = self._get_absolute_url(formatter.req, args[0])
         scheme, netloc, path, params, query, fragment = urlparse(url)
 
+        kwargs = string_keys(kwargs)
         try:
             style_dict = xform_style(kwargs.get('style', ''))
         except:
@@ -83,7 +76,6 @@ class MovieMacro(WikiMacroBase):
         if netloc in ('vimeo.com', 'www.vimeo.com'):
             return self.embed_vimeo(scheme, netloc, path, query, style)
 
-        # Local movies.
         return self.embed_player(url, kwargs, style, formatter)
 
     def embed_youtube(self, scheme, netloc, path, query, style):
@@ -141,7 +133,7 @@ class MovieMacro(WikiMacroBase):
 
     def embed_player(self, url, kwargs, style, formatter):
         tags = []
-        if not getattr(formatter, FLOWPLAYER_EMBEDDED, False):
+        if not getattr(formatter, self.FLOWPLAYER_EMBEDDED, False):
             add_script(formatter.req, 'movie/js/flashembed.min.js')
             add_script(formatter.req, 'movie/js/flow.embed.js')
             script = """
@@ -150,7 +142,7 @@ class MovieMacro(WikiMacroBase):
                 });
             """ % self._get_absolute_url(formatter.req, EMBED_PATH_FLOWPLAYER)
             tags.append(tag.script(script))
-            setattr(formatter, FLOWPLAYER_EMBEDDED, True)
+            setattr(formatter, self.FLOWPLAYER_EMBEDDED, True)
 
         if kwargs.pop('clear', None) == 'none':
             style.pop('clear')
@@ -178,6 +170,10 @@ class MovieMacro(WikiMacroBase):
         return []
 
     # Private methods
+
+    def _increment_embed_count(self, formatter):
+        embed_count = getattr(formatter, self.EMBED_COUNT, 0)
+        setattr(formatter, self.EMBED_COUNT, embed_count + 1)
 
     def _get_absolute_url(self, req, url):
         """ Generate an absolute url from the url with the special schemes
