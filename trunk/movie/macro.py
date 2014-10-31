@@ -90,46 +90,53 @@ class MovieMacro(WikiMacroBase):
         query_dict = xform_query(query)
         video = query_dict.get('v')
         url = urlunparse((scheme, netloc, '/v/%s' % video, '', '', ''))
-        return tag.object(tag.param(name='movie', value=url),
-                          tag.param(name='allowFullScreen', value='true'),
-                          tag.embed(
-                              src=url,
-                              type=SWF_MIME_TYPE,
-                              allowfullscreen='true',
-                              width=style['width'],
-                              height=style['height']),
-                          style=xform_style(style))
+        return tag.object(
+            tag.param(name='movie', value=url),
+            tag.param(name='allowFullScreen', value='true'),
+            tag.embed(
+                src=url,
+                type=SWF_MIME_TYPE,
+                allowfullscreen='true',
+                width=style['width'],
+                height=style['height']
+            ),
+            style=xform_style(style)
+        )
 
     def embed_metacafe(self, scheme, netloc, path, query, style):
-        parts = path.split('/')
+        parts = filter(None, path.split('/'))
         try:
-            path = SWF_PATH_METACAFE % (parts[2], parts[3])
+            path = SWF_PATH_METACAFE % (parts[1], parts[2])
         except:
             msg = "Non-standard URL, "\
                   "don't know how to process it, file a ticket please."
             raise TracError(msg)
-        url = urlunparse((scheme, netloc, path, '', '', ''))
-        return tag.embed(src=url,
-                         wmode='transparent',
-                         pluginspage=URL_GET_FLASH_PLAYER,
-                         type=SWF_MIME_TYPE,
-                         style=xform_style(style))
+        return tag.embed(
+            src=urlunparse((scheme, netloc, path, '', '', '')),
+            type=SWF_MIME_TYPE,
+            wmode='transparent',
+            pluginspage=URL_GET_FLASH_PLAYER,
+            style=xform_style(style)
+        )
 
     def embed_vimeo(self, scheme, netloc, path, query, style):
         parts = filter(None, path.split('/'))
         path = SWF_PATH_VIMEO % parts[0]
         url = urlunparse((scheme, netloc, path, '', '', ''))
-        return tag.object(tag.param(name='movie', value=url),
-                          tag.param(name='allowfullscreen', value='true'),
-                          tag.param(name='allowscriptaccess', value='always'),
-                          tag.embed(
-                              src=url,
-                              type=SWF_MIME_TYPE,
-                              allowfullscreen='true',
-                              allowscriptaccess='always',
-                              width=style['width'],
-                              height=style['height']),
-                          style=xform_style(style))
+        return tag.object(
+            tag.param(name='movie', value=url),
+            tag.param(name='allowfullscreen', value='true'),
+            tag.param(name='allowscriptaccess', value='always'),
+            tag.embed(
+                src=url,
+                type=SWF_MIME_TYPE,
+                allowfullscreen='true',
+                allowscriptaccess='always',
+                width=style['width'],
+                height=style['height']
+            ),
+            style=xform_style(style)
+        )
 
     def embed_player(self, url, kwargs, style, formatter):
         tags = []
@@ -203,7 +210,7 @@ class MovieMacro(WikiMacroBase):
 
         if scheme in ('wiki', 'ticket'):
             resource = Resource(scheme, netloc).child('attachment', path)
-            return get_resource_url(self.env, resource, req.abs_href,
-                                    format='raw')
+            kwargs = {'format': 'raw'}
+            return get_resource_url(self.env, resource, req.abs_href, **kwargs)
 
         return url
