@@ -23,21 +23,19 @@ from utils import string_keys, xform_style, xform_query
 
 SWF_MIME_TYPE = mimetypes.types_map.get('.swf')
 
-URL_GET_FLASH_PLAYER = 'http://get.adobe.com/jp/flashplayer/'
-
 EMBED_PATH_METACAFE = '/embed/%s/'
 EMBED_PATH_VIMEO = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;'\
                    'show_title=1&amp;show_byline=1&amp;'\
                    'show_portrait=0&amp;color=&amp;fullscreen=1'
-EMBED_PATH_FLOWPLAYER = 'htdocs://movie/swf/FlowPlayerDark.swf'
-
 EMBED_PATH_FLOWPLAYER = {
     'js': 'movie/js/flowplayer.min.js',
     'css': 'movie/js/skin/minimalist.css',
     'swf': 'movie/swf/flowplayer.swf',
 }
 
-DEFAULT_SPLASH_IMAGE = 'htdocs://movie/img/black.jpg'
+SITE_YOUTUBE = ('www.youtube.com', 'www.youtube-nocookie.com')
+SITE_METACAFE = ('www.metacafe.com')
+SITE_VIMEO = ('vimeo.com', 'www.vimeo.com')
 
 
 class MovieMacro(WikiMacroBase):
@@ -71,13 +69,13 @@ class MovieMacro(WikiMacroBase):
             'clear': 'both'
         }
 
-        if netloc in ('www.youtube.com', 'www.youtube-nocookie.com'):
+        if netloc in SITE_YOUTUBE:
             return self.embed_youtube(scheme, netloc, path, query, style)
 
-        if netloc == 'www.metacafe.com':
+        if netloc in SITE_METACAFE:
             return self.embed_metacafe(scheme, netloc, path, query, style)
 
-        if netloc in ('vimeo.com', 'www.vimeo.com'):
+        if netloc in SITE_VIMEO:
             return self.embed_vimeo(scheme, netloc, path, query, style)
 
         if config.splash:
