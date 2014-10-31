@@ -121,29 +121,6 @@ class MovieMacro(WikiMacroBase):
                               tag.embed(src=url, type='application/x-shockwave-flash', allowfullscreen='true', width=width, height=height),
                               style=xform_style(style))
 
-        if netloc == 'video.google.com':
-            query_dict = xform_query(query)
-            query_dict['hl'] = 'en'
-            query_dict['fs'] = 'true'
-
-            query = xform_query(query_dict)
-
-            url = urlunparse((scheme, netloc, '/googleplayer.swf', '', query, ''))
-
-            width = kwargs.pop('width', style_dict.get('width', '400px'))
-            height = kwargs.pop('height', style_dict.get('height', '326px'))
-
-            style.update({
-                'width': width,
-                'height': height,
-            })
-
-            return tag.embed(src=url,
-                             allowFullScreen='true',
-                             allowScriptAccess='always',
-                             type='application/x-shockwave-flash',
-                             style=xform_style(style))
-
         if netloc == 'www.metacafe.com':
             parts = path.split('/')
             try:
