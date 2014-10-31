@@ -5,13 +5,15 @@
     Embeds various online movies.
 """
 import mimetypes
+from os.path import join as pathjoin
 from urlparse import urlparse, urlunparse
 
 from genshi.builder import tag
+from pkg_resources import resource_filename
 from trac.core import TracError
 from trac.core import implements
 from trac.resource import Resource, get_resource_url
-from trac.web.chrome import ITemplateProvider, add_script
+from trac.web.chrome import ITemplateProvider, add_script, add_stylesheet
 from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
 
@@ -29,6 +31,12 @@ EMBED_PATH_VIMEO = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;'\
                    'show_portrait=0&amp;color=&amp;fullscreen=1'
 EMBED_PATH_FLOWPLAYER = 'htdocs://movie/swf/FlowPlayerDark.swf'
 
+EMBED_PATH_FLOWPLAYER = {
+    'js': 'movie/js/flowplayer.min.js',
+    'css': 'movie/js/skin/minimalist.css',
+    'swf': 'movie/swf/flowplayer.swf',
+}
+
 DEFAULT_SPLASH_IMAGE = 'htdocs://movie/img/black.jpg'
 
 
@@ -38,16 +46,12 @@ class MovieMacro(WikiMacroBase):
     """
     implements(ITemplateProvider)
 
-    EMBED_COUNT = '_moviemacro_embed_count'
-    FLOWPLAYER_EMBEDDED = '_moviemacro_flowplayer_embedded'
-
     # IWikiMacroProvider methods
     def expand_macro(self, formatter, name, content):
         args, kwargs = parse_args(content, strict=True)
         if len(args) == 0:
             raise TracError('URL to a movie at least required.')
 
-        self._increment_embed_count(formatter)
         url = self._get_absolute_url(formatter.req, args[0])
         scheme, netloc, path, params, query, fragment = urlparse(url)
 
@@ -76,6 +80,11 @@ class MovieMacro(WikiMacroBase):
         if netloc in ('vimeo.com', 'www.vimeo.com'):
             return self.embed_vimeo(scheme, netloc, path, query, style)
 
+        if config.splash:
+            splash_url = pathjoin(formatter.href.chrome(), config.splash)
+            splash_style = 'background-color:#777; '\
+                           'background-image:url(%s);' % splash_url
+            style['style'] = splash_style
         return self.embed_player(url, kwargs, style, formatter)
 
     def embed_youtube(self, scheme, netloc, path, query, style):
@@ -132,48 +141,30 @@ class MovieMacro(WikiMacroBase):
         )
 
     def embed_player(self, url, kwargs, style, formatter):
-        tags = []
-        if not getattr(formatter, self.FLOWPLAYER_EMBEDDED, False):
-            add_script(formatter.req, 'movie/js/flashembed.min.js')
-            add_script(formatter.req, 'movie/js/flow.embed.js')
-            script = """
-                $(function() {
-                    $('a.flowplayer').flowembed('%s',  {initialScale:'scale'});
-                });
-            """ % self._get_absolute_url(formatter.req, EMBED_PATH_FLOWPLAYER)
-            tags.append(tag.script(script))
-            setattr(formatter, self.FLOWPLAYER_EMBEDDED, True)
-
-        if kwargs.pop('clear', None) == 'none':
-            style.pop('clear')
-
-        kwargs = {'style': xform_style(style)}
-        src = self._get_absolute_url(
-            formatter.req, kwargs.pop('splash', DEFAULT_SPLASH_IMAGE))
-        tags.append(
-            tag.a(
-                tag.img(src=src, **kwargs),
-                class_='flowplayer',
-                href=url,
-                **kwargs
-            )
-        )
-        return ''.join([str(i) for i in tags])
+        add_script(formatter.req, EMBED_PATH_FLOWPLAYER['js'])
+        add_stylesheet(formatter.req, EMBED_PATH_FLOWPLAYER['css'])
+        swf = pathjoin(formatter.href.chrome(), EMBED_PATH_FLOWPLAYER['swf'])
+        attrs = {
+            'data-swf': swf,
+            'data-ratio': '0.4167',
+            'style': xform_style(style),
+        }
+        return tag.div(
+            tag.video(
+                tag.source(type=mimetypes.guess_type(url)[0], src=url),
+            ),
+            class_='flowplayer',
+            **attrs)
 
     # ITemplateProvider methods
 
     def get_htdocs_dirs(self):
-        from pkg_resources import resource_filename
-        return [('movie', resource_filename('movie', 'htdocs'))]
+        yield ('movie', resource_filename('movie', 'htdocs'))
 
     def get_templates_dirs(self):
         return []
 
     # Private methods
-
-    def _increment_embed_count(self, formatter):
-        embed_count = getattr(formatter, self.EMBED_COUNT, 0)
-        setattr(formatter, self.EMBED_COUNT, embed_count + 1)
 
     def _get_absolute_url(self, req, url):
         """ Generate an absolute url from the url with the special schemes
