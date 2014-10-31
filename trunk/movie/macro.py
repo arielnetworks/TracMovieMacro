@@ -98,7 +98,7 @@ class MovieMacro(WikiMacroBase):
             'clear': 'both'
         }
 
-        if netloc == 'www.youtube.com' or netloc == 'www.youtube-nocookie.com':
+        if netloc in ('www.youtube.com', 'www.youtube-nocookie.com'):
             return self.embed_youtube(scheme, netloc, path, params, query,
                                       fragment, kwargs, style_dict, style)
 
