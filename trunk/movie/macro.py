@@ -26,11 +26,11 @@ FLOWPLAYER_EMBEDDED = '_moviemacro_flowplayer_embedded'
 
 URL_GET_FLASH_PLAYER = 'http://get.adobe.com/jp/flashplayer/'
 
-SWF_PATH_METACAFE = '/fplayer/%s/%s.swf'
-SWF_PATH_VIMEO = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;'\
-                 'show_title=1&amp;show_byline=1&amp;'\
-                 'show_portrait=0&amp;color=&amp;fullscreen=1'
-SWF_PATH_FLOWPLAYER = 'htdocs://movie/swf/FlowPlayerDark.swf'
+EMBED_PATH_METACAFE = '/embed/%s/'
+EMBED_PATH_VIMEO = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;'\
+                   'show_title=1&amp;show_byline=1&amp;'\
+                   'show_portrait=0&amp;color=&amp;fullscreen=1'
+EMBED_PATH_FLOWPLAYER = 'htdocs://movie/swf/FlowPlayerDark.swf'
 
 DEFAULT_SPLASH_IMAGE = 'htdocs://movie/img/black.jpg'
 
@@ -106,22 +106,23 @@ class MovieMacro(WikiMacroBase):
     def embed_metacafe(self, scheme, netloc, path, query, style):
         parts = filter(None, path.split('/'))
         try:
-            path = SWF_PATH_METACAFE % (parts[1], parts[2])
+            path = EMBED_PATH_METACAFE % parts[1]
         except:
             msg = "Non-standard URL, "\
                   "don't know how to process it, file a ticket please."
             raise TracError(msg)
-        return tag.embed(
+        return tag.iframe(
             src=urlunparse((scheme, netloc, path, '', '', '')),
-            type=SWF_MIME_TYPE,
-            wmode='transparent',
-            pluginspage=URL_GET_FLASH_PLAYER,
+            allowFullScreen='true',
+            frameborder=0,
+            width=style['width'],
+            height=style['height'],
             style=xform_style(style)
         )
 
     def embed_vimeo(self, scheme, netloc, path, query, style):
         parts = filter(None, path.split('/'))
-        path = SWF_PATH_VIMEO % parts[0]
+        path = EMBED_PATH_VIMEO % parts[0]
         url = urlunparse((scheme, netloc, path, '', '', ''))
         return tag.object(
             tag.param(name='movie', value=url),
@@ -147,7 +148,7 @@ class MovieMacro(WikiMacroBase):
                 $(function() {
                     $('a.flowplayer').flowembed('%s',  {initialScale:'scale'});
                 });
-            """ % self._get_absolute_url(formatter.req, SWF_PATH_FLOWPLAYER)
+            """ % self._get_absolute_url(formatter.req, EMBED_PATH_FLOWPLAYER)
             tags.append(tag.script(script))
             setattr(formatter, FLOWPLAYER_EMBEDDED, True)
 
