@@ -17,8 +17,8 @@ def _xform_to_dict(d, first_sep, second_sep):
     >>> d == _xform_to_dict('display: none; clear: both;', ';', ':')
     True
     """
-    splitted = [i for i in d.split(first_sep) if i]
-    return dict((s.strip() for s in i.split(second_sep, 1)) for i in splitted)
+    return dict((s.strip() for s in i.split(second_sep, 1))
+                for i in filter(None, d.split(first_sep)))
 
 
 def xform_style(style):
