@@ -15,6 +15,7 @@ from trac.web.chrome import ITemplateProvider, add_script
 from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
 
+from model import MovieMacroConfig
 from utils import string_keys, xform_style, xform_query
 
 
@@ -51,97 +52,72 @@ class MovieMacro(WikiMacroBase):
         except:
             raise TracError('Double check the `style` argument.')
 
+        config = MovieMacroConfig(self.env, self.config)
         style = {
-            'display': 'block',
+            'width': style_dict.get('width', config.width),
+            'height': style_dict.get('width', config.height),
             'border': style_dict.get('border', 'none'),
             'margin': style_dict.get('margin', '0 auto'),
+            'display': 'block',
             'clear': 'both'
         }
 
         if netloc in ('www.youtube.com', 'www.youtube-nocookie.com'):
-            return self.embed_youtube(scheme, netloc, path, params, query,
-                                      fragment, kwargs, style_dict, style)
+            return self.embed_youtube(scheme, netloc, path, params, query, style)
 
         if netloc == 'www.metacafe.com':
-            return self.embed_metacafe(scheme, netloc, path, params, query,
-                                       fragment, kwargs, style_dict, style)
+            return self.embed_metacafe(scheme, netloc, path, params, query, style)
 
         if netloc in ('vimeo.com', 'www.vimeo.com'):
-            return self.embed_vimeo(scheme, netloc, path, params, query,
-                                    fragment, kwargs, style_dict, style)
+            return self.embed_vimeo(scheme, netloc, path, params, query, style)
 
         # Local movies.
-        return self.embed_player(url, kwargs, style_dict, style, formatter)
+        return self.embed_player(url, kwargs, style, formatter)
 
-    def embed_youtube(self, scheme, netloc, path, params, query, fragment,
-                      kwargs, style_dict, style):
+    def embed_youtube(self, scheme, netloc, path, params, query, style):
         query_dict = xform_query(query)
         video = query_dict.get('v')
-
         url = urlunparse((scheme, netloc, '/v/%s' % video, '', '', ''))
-
-        width = kwargs.pop('width', style_dict.get('width', '425px'))
-        height = kwargs.pop('height', style_dict.get('height', '344px'))
-
-        style.update({
-            'width': width,
-            'height': height,
-        })
-
         return tag.object(tag.param(name='movie', value=url),
                           tag.param(name='allowFullScreen', value='true'),
-                          tag.embed(src=url, type='application/x-shockwave-flash', allowfullscreen='true', width=width, height=height),
+                          tag.embed(
+                              src=url,
+                              type='application/x-shockwave-flash',
+                              allowfullscreen='true',
+                              width=style['width'],
+                              height=style['height']),
                           style=xform_style(style))
 
-    def embed_metacafe(self, scheme, netloc, path, params, query, fragment,
-                       kwargs, style_dict, style):
+    def embed_metacafe(self, scheme, netloc, path, params, query, style):
         parts = path.split('/')
         try:
             path = '/fplayer/%s/%s.swf' % (parts[2], parts[3])
         except:
             raise TracError("Non-standard URL, don't know how to process it, file a ticket please.")
-
         url = urlunparse((scheme, netloc, path, '', '', ''))
-
-        width = kwargs.pop('width', style_dict.get('width', '400px'))
-        height = kwargs.pop('height', style_dict.get('height', '345px'))
-
-        style.update({
-            'width': width,
-            'height': height,
-        })
-
         return tag.embed(src=url,
                          wmode='transparent',
                          pluginspage='http://www.macromedia.com/go/getflashplayer',
                          type='application/x-shockwave-flash',
                          style=xform_style(style))
 
-    def embed_vimeo(self, scheme, netloc, path, params, query, fragment,
-                    kwargs, style_dict, style):
-        parts = path.split('/')
-
-        while '' in parts:
-            parts.remove('')
-
+    def embed_vimeo(self, scheme, netloc, path, params, query, style):
+        parts = filter(None, path.split('/'))
         path = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1' % parts[0]
         url = urlunparse((scheme, netloc, path, '', '', ''))
-
-        width = kwargs.pop('width', style_dict.get('width', '640px'))
-        height = kwargs.pop('height', style_dict.get('height', '401px'))
-
-        style.update({
-            'width': width,
-            'height': height,
-        })
-
         return tag.object(tag.param(name='movie', value=url),
                           tag.param(name='allowfullscreen', value='true'),
                           tag.param(name='allowscriptaccess', value='always'),
-                          tag.embed(src=url, type='application/x-shockwave-flash', allowfullscreen='true', allowscriptaccess='always', width=width, height=height),
+                          tag.embed(
+                              src=url,
+                              type='application/x-shockwave-flash',
+                              allowfullscreen='true',
+                              allowscriptaccess='always',
+                              width=style['width'],
+                              height=style['height']),
                           style=xform_style(style))
 
-    def embed_player(self, url, kwargs, style_dict, style, formatter):
+    def embed_player(self, url, kwargs, style, formatter):
         tags = []
         if not getattr(formatter, FLOWPLAYER_EMBEDDED, False):
             add_script(formatter.req, 'movie/js/flashembed.min.js')
@@ -153,14 +129,6 @@ class MovieMacro(WikiMacroBase):
             ''' % self._get_absolute_url(formatter.req, 'htdocs://movie/swf/FlowPlayerDark.swf')
             tags.append(tag.script(script))
             setattr(formatter, FLOWPLAYER_EMBEDDED, True)
-
-        width = kwargs.pop('width', style_dict.get('width', '320px'))
-        height = kwargs.pop('height', style_dict.get('height', '320px'))
-
-        style.update({
-            'width': width,
-            'height': height,
-        })
 
         if kwargs.pop('clear', None) == 'none':
             style.pop('clear')
