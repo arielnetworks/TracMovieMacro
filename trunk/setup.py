@@ -20,6 +20,8 @@ setup(
         'movie': [
             'htdocs/img/*.jpg',
             'htdocs/js/*.js',
+            'htdocs/js/skin/*.css',
+            'htdocs/js/skin/img/*',
             'htdocs/swf/*.swf',
         ],
     },

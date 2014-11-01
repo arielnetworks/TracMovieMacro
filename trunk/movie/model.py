@@ -6,8 +6,8 @@ class MovieMacroConfig(object):
     """Configuration model to handle MovieMacro settings."""
 
     SECTION = 'moviemacro'
-    DEFAULT_WIDTH = '640'
-    DEFAULT_HEIGHT = '360'
+    DEFAULT_WIDTH = '640px'
+    DEFAULT_HEIGHT = '360px'
     DEFAULT_SPLASH = None
 
     def __init__(self, env, config):
