@@ -90,8 +90,10 @@ class MovieMacro(WikiMacroBase):
         return handler
 
     def post_process_request(self, req, template, data, content_type):
-        add_script(req, EMBED_PATH_FLOWPLAYER['js'])
-        add_stylesheet(req, EMBED_PATH_FLOWPLAYER['css'])
+        if req.path_info.startswith('/ticket/') or \
+           req.path_info.startswith('/wiki/'):
+            add_script(req, EMBED_PATH_FLOWPLAYER['js'])
+            add_stylesheet(req, EMBED_PATH_FLOWPLAYER['css'])
         return template, data, content_type
 
     # ITemplateProvider methods
