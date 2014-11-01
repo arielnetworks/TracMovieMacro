@@ -13,6 +13,7 @@ from pkg_resources import resource_filename
 from trac.core import TracError
 from trac.core import implements
 from trac.resource import Resource, get_resource_url
+from trac.web.api import IRequestFilter
 from trac.web.chrome import ITemplateProvider, add_script, add_stylesheet
 from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
@@ -33,7 +34,7 @@ class MovieMacro(WikiMacroBase):
     """ Embed online movies from YouTube, GoogleVideo and MetaCafe, and local
         movies via FlowPlayer.
     """
-    implements(ITemplateProvider)
+    implements(IRequestFilter, ITemplateProvider)
 
     # IWikiMacroProvider methods
     def expand_macro(self, formatter, name, content):
@@ -71,8 +72,6 @@ class MovieMacro(WikiMacroBase):
         return self.embed_player(formatter, url, style)
 
     def embed_player(self, formatter, url, style):
-        add_script(formatter.req, EMBED_PATH_FLOWPLAYER['js'])
-        add_stylesheet(formatter.req, EMBED_PATH_FLOWPLAYER['css'])
         swf = pathjoin(formatter.href.chrome(), EMBED_PATH_FLOWPLAYER['swf'])
         attrs = {
             'data-swf': swf,
@@ -86,8 +85,16 @@ class MovieMacro(WikiMacroBase):
             class_='flowplayer',
             **attrs)
 
-    # ITemplateProvider methods
+    # IRequestFilter methods
+    def pre_process_request(self, req, handler):
+        return handler
 
+    def post_process_request(self, req, template, data, content_type):
+        add_script(req, EMBED_PATH_FLOWPLAYER['js'])
+        add_stylesheet(req, EMBED_PATH_FLOWPLAYER['css'])
+        return template, data, content_type
+
+    # ITemplateProvider methods
     def get_htdocs_dirs(self):
         yield ('movie', resource_filename('movie', 'htdocs'))
 
