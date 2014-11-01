@@ -47,18 +47,20 @@ class MovieMacro(WikiMacroBase):
 
         try:
             style_dict = xform_style(string_keys(kwargs).get('style', ''))
-        except:
-            raise TracError('Double check the `style` argument.')
+        except Exception as e:
+            raise TracError('Double check the `style` argument: ' + str(e))
 
+        self.log.debug('moviemacro style_dict: ' + repr(style_dict))
         config = MovieMacroConfig(self.env, self.config)
         style = {
             'width': style_dict.get('width', config.width),
-            'height': style_dict.get('width', config.height),
+            'height': style_dict.get('height', config.height),
             'border': style_dict.get('border', 'none'),
             'margin': style_dict.get('margin', '0 auto'),
             'display': 'block',
             'clear': 'both'
         }
+        self.log.debug('moviemacro style: ' + repr(style))
 
         site_player = get_embed_video_site_player(netloc)
         if site_player is not None:
