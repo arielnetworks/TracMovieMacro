@@ -83,7 +83,7 @@ class MovieMacro(WikiMacroBase):
             splash_style = 'background-color:#777; '\
                            'background-image:url(%s);' % splash_url
             style['style'] = splash_style
-        return self.embed_player(url, kwargs, style, formatter)
+        return self.embed_player(url, style, formatter)
 
     def embed_youtube(self, scheme, netloc, path, query, style):
         query_dict = xform_query(query)
@@ -138,7 +138,7 @@ class MovieMacro(WikiMacroBase):
             style=xform_style(style)
         )
 
-    def embed_player(self, url, kwargs, style, formatter):
+    def embed_player(self, url, style, formatter):
         add_script(formatter.req, EMBED_PATH_FLOWPLAYER['js'])
         add_stylesheet(formatter.req, EMBED_PATH_FLOWPLAYER['css'])
         swf = pathjoin(formatter.href.chrome(), EMBED_PATH_FLOWPLAYER['swf'])
