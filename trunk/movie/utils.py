@@ -11,14 +11,14 @@ def string_keys(d):
     return dict((str(key), value) for key, value in d.items())
 
 
-def _xform_to_dict(d, first_sep, second_sep):
+def _xform_to_dict(style, first_sep, second_sep):
     """
     >>> d = {'display': 'none', 'clear': 'both'}
     >>> d == _xform_to_dict('display: none; clear: both;', ';', ':')
     True
     """
     return dict((s.strip() for s in i.split(second_sep, 1))
-                for i in filter(None, d.split(first_sep)))
+                for i in filter(None, style.split(first_sep)))
 
 
 def xform_style(style):
@@ -31,7 +31,7 @@ def xform_style(style):
     'display: none;'
     >>> xform_style('clear: both;')
     {'clear': 'both'}
-    >>> style = {'width': u'320px',  'height': u'240px', 'display': 'none'}
+    >>> style = {'width': u'320px', 'height': u'240px', 'display': 'none'}
     >>> style == xform_style(xform_style(style))
     True
     """
