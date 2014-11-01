@@ -6,7 +6,7 @@
 """
 import mimetypes
 from os.path import join as pathjoin
-from urlparse import urlparse, urlunparse
+from urlparse import urlparse
 
 from genshi.builder import tag
 from pkg_resources import resource_filename
@@ -18,24 +18,15 @@ from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
 
 from model import MovieMacroConfig
-from utils import string_keys, xform_style, xform_query
+from utils import string_keys, xform_style
+from video_sites import get_embed_video_site_player
 
 
-SWF_MIME_TYPE = mimetypes.types_map.get('.swf')
-
-EMBED_PATH_METACAFE = '/embed/%s/'
-EMBED_PATH_VIMEO = '/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;'\
-                   'show_title=1&amp;show_byline=1&amp;'\
-                   'show_portrait=0&amp;color=&amp;fullscreen=1'
 EMBED_PATH_FLOWPLAYER = {
     'js': 'movie/js/flowplayer.min.js',
     'css': 'movie/js/skin/minimalist.css',
     'swf': 'movie/swf/flowplayer.swf',
 }
-
-SITE_YOUTUBE = ('www.youtube.com', 'www.youtube-nocookie.com')
-SITE_METACAFE = ('www.metacafe.com')
-SITE_VIMEO = ('vimeo.com', 'www.vimeo.com')
 
 
 class MovieMacro(WikiMacroBase):
@@ -53,9 +44,8 @@ class MovieMacro(WikiMacroBase):
         url = self._get_absolute_url(formatter.req, args[0])
         scheme, netloc, path, params, query, fragment = urlparse(url)
 
-        kwargs = string_keys(kwargs)
         try:
-            style_dict = xform_style(kwargs.get('style', ''))
+            style_dict = xform_style(string_keys(kwargs).get('style', ''))
         except:
             raise TracError('Double check the `style` argument.')
 
@@ -69,76 +59,18 @@ class MovieMacro(WikiMacroBase):
             'clear': 'both'
         }
 
-        if netloc in SITE_YOUTUBE:
-            return self.embed_youtube(scheme, netloc, path, query, style)
-
-        if netloc in SITE_METACAFE:
-            return self.embed_metacafe(scheme, netloc, path, query, style)
-
-        if netloc in SITE_VIMEO:
-            return self.embed_vimeo(scheme, netloc, path, query, style)
+        site_player = get_embed_video_site_player(netloc)
+        if site_player is not None:
+            return site_player(scheme, netloc, path, query, style)
 
         if config.splash:
             splash_url = pathjoin(formatter.href.chrome(), config.splash)
             splash_style = 'background-color:#777; '\
                            'background-image:url(%s);' % splash_url
             style['style'] = splash_style
-        return self.embed_player(url, style, formatter)
+        return self.embed_player(formatter, url, style)
 
-    def embed_youtube(self, scheme, netloc, path, query, style):
-        query_dict = xform_query(query)
-        video = query_dict.get('v')
-        url = urlunparse((scheme, netloc, '/v/%s' % video, '', '', ''))
-        return tag.object(
-            tag.param(name='movie', value=url),
-            tag.param(name='allowFullScreen', value='true'),
-            tag.embed(
-                src=url,
-                type=SWF_MIME_TYPE,
-                allowfullscreen='true',
-                width=style['width'],
-                height=style['height']
-            ),
-            style=xform_style(style)
-        )
-
-    def embed_metacafe(self, scheme, netloc, path, query, style):
-        parts = filter(None, path.split('/'))
-        try:
-            path = EMBED_PATH_METACAFE % parts[1]
-        except:
-            msg = "Non-standard URL, "\
-                  "don't know how to process it, file a ticket please."
-            raise TracError(msg)
-        return tag.iframe(
-            src=urlunparse((scheme, netloc, path, '', '', '')),
-            allowFullScreen='true',
-            frameborder=0,
-            width=style['width'],
-            height=style['height'],
-            style=xform_style(style)
-        )
-
-    def embed_vimeo(self, scheme, netloc, path, query, style):
-        parts = filter(None, path.split('/'))
-        path = EMBED_PATH_VIMEO % parts[0]
-        url = urlunparse((scheme, netloc, path, '', '', ''))
-        return tag.object(
-            tag.param(name='movie', value=url),
-            tag.param(name='allowfullscreen', value='true'),
-            tag.param(name='allowscriptaccess', value='always'),
-            tag.embed(
-                src=url,
-                type=SWF_MIME_TYPE,
-                allowfullscreen='true',
-                allowscriptaccess='always',
-                width=style['width'],
-                height=style['height']
-            ),
-            style=xform_style(style)
-        )
-
-    def embed_player(self, url, style, formatter):
+    def embed_player(self, formatter, url, style):
         add_script(formatter.req, EMBED_PATH_FLOWPLAYER['js'])
         add_stylesheet(formatter.req, EMBED_PATH_FLOWPLAYER['css'])
         swf = pathjoin(formatter.href.chrome(), EMBED_PATH_FLOWPLAYER['swf'])
@@ -185,7 +117,6 @@ class MovieMacro(WikiMacroBase):
             source://changeset/path/filename.ext
                 ie. source://1024/trunk/docs/README
         """
-
         scheme, netloc, path, query, params, fragment = urlparse(url)
 
         if scheme in ('htdocs', 'chrome'):
