@@ -27,17 +27,13 @@ def get_embed_video_site_player(netloc):
 def embed_youtube(scheme, netloc, path, query, style):
     query_dict = xform_query(query)
     video = query_dict.get('v')
-    url = urlunparse((scheme, netloc, '/v/%s' % video, '', '', ''))
-    return tag.object(
-        tag.param(name='movie', value=url),
-        tag.param(name='allowFullScreen', value='true'),
-        tag.embed(
-            src=url,
-            type=SWF_MIME_TYPE,
-            allowfullscreen='true',
-            width=style['width'],
-            height=style['height']
-        ),
+    url = urlunparse((scheme, netloc, '/embed/%s' % video, '', '', ''))
+    return tag.iframe(
+        src=url,
+        allowfullscreen='allowfullscreen',
+        frameborder='0',
+        width=style['width'],
+        height=style['height'],
         style=xform_style(style)
     )
 
