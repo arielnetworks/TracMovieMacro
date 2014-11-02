@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
 from setuptools import setup
+
+
+if sys.version_info[:2] < (2, 6):
+    raise RuntimeError('Python version 2.6 or 2.7 required.')
 
 try:
     long_description = ''.join([

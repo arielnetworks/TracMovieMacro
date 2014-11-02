@@ -4,7 +4,9 @@
 
     Embeds various online movies.
 """
+import json
 import mimetypes
+from datetime import datetime
 from os.path import join as pathjoin
 from urlparse import urlparse
 
@@ -19,7 +21,11 @@ from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
 
 from model import MovieMacroConfig
-from utils import parse_imagemacro_style, string_keys, xform_style
+from utils import parse_imagemacro_style
+from utils import set_default_parameters
+from utils import string_keys
+from utils import xform_query
+from utils import xform_style
 from video_sites import get_embed_video_site_player
 
 
@@ -27,6 +33,30 @@ EMBED_PATH_FLOWPLAYER = {
     'js': 'movie/js/flowplayer.min.js',
     'css': 'movie/js/skin/minimalist.css',
     'swf': 'movie/swf/flowplayer.swf',
+}
+
+_EMBED_FLOWPLAYER_DEFAULT_PARAMETERS = {
+    'adaptiveRatio': True,
+    'bufferTime': '0.1',
+    'debug': False,
+    'disabled': False,
+    'engine': 'html5',
+    'flashfit': False,
+    'fullscreen': True,
+    'errors': 'array',
+    'keyboard': True,
+    'live': False,
+    'muted': False,
+    'native_fullscreen': False,
+    'preload': None,
+    'ratio': None,  # use adaptiveRatio by default
+    'rtmp': None,
+    'speeds': [0.25, 0.5, 1, 1.5, 2],
+    'swf': None,  # set swf path on server-side
+    'splash': False,
+    'subscribe': False,
+    'tooltip': True,
+    'volume': '1',
 }
 
 
@@ -71,21 +101,36 @@ class MovieMacro(WikiMacroBase):
             splash_style = 'background-color:#777; '\
                            'background-image:url(%s);' % splash_url
             style['style'] = splash_style
-        return self.embed_player(formatter, url, style)
+        return self.embed_player(formatter, url, query, style)
 
-    def embed_player(self, formatter, url, style):
+    def embed_player(self, formatter, url, query, style):
+        query_dict = xform_query(query)
+        set_default_parameters(
+            query_dict,
+            _EMBED_FLOWPLAYER_DEFAULT_PARAMETERS
+        )
+
+        player_id = self._generate_player_id()
         swf = pathjoin(formatter.href.chrome(), EMBED_PATH_FLOWPLAYER['swf'])
+        style.pop('width')  # use adaptiveRatio for player-size
+        style.pop('height')  # use adaptiveRatio for player-size
         attrs = {
+            'id': player_id,
             'data-swf': swf,
-            'data-ratio': '0.4167',
             'style': xform_style(style),
         }
         return tag.div(
-            tag.video(
+            tag.video([
                 tag.source(type=mimetypes.guess_type(url)[0], src=url),
-            ),
-            class_='flowplayer',
-            **attrs)
+                tag.script("""
+                    $(function() {
+                        $('#%s').flowplayer(%s);
+                    });
+                """ % (player_id, json.JSONEncoder().encode(query_dict))
+                ),
+            ]),
+            **attrs
+        )
 
     # IRequestFilter methods
     def pre_process_request(self, req, handler):
@@ -106,6 +151,10 @@ class MovieMacro(WikiMacroBase):
         return []
 
     # Private methods
+
+    def _generate_player_id(self):
+        now = datetime.now()
+        return 'player-%s-%s' % (now.strftime('%s'), now.microsecond)
 
     def _get_absolute_url(self, req, url):
         """ Generate an absolute url from the url with the special schemes
