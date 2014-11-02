@@ -23,3 +23,6 @@ trac/htdocs/js/messages/*.js
 .project
 .pydevproject
 .settings
+.cache
+.tox
+*.egg-info
