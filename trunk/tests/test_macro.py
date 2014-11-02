@@ -37,6 +37,8 @@ def test_get_absolute_url(movie_macro, url, expected):
      '%s/raw-attachment/ticket/123/sample.webm' % BASE_HREF),
     ('ticket:123:sample.webm', u'/ticket/123',
      '%s/raw-attachment/ticket/123/sample.webm' % BASE_HREF),
+    ('ticket:456:sample.webm', u'/ticket/123',
+     '%s/raw-attachment/ticket/456/sample.webm' % BASE_HREF),
     ('wiki:sample.mp4', u'/wiki/page',
      '%s/raw-attachment/wiki/page/sample.mp4' % BASE_HREF),
     ('wiki:page/sample.mp4', u'/wiki/page',

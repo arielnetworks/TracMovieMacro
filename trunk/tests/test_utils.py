@@ -75,6 +75,7 @@ def test_set_default_parameters(param, default, kwargs, expected):
 @pytest.mark.parametrize(('url', 'path_info', 'expected'), [
     ('file.ext', '/ticket/1', ('ticket', '1', 'file.ext')),
     ('ticket:1:file.ext', '/ticket/1', ('ticket', '1', 'file.ext')),
+    ('ticket:2:file.ext', '/ticket/1', ('ticket', '2', 'file.ext')),
     ('file.ext', '/wiki/start', ('wiki', 'start', 'file.ext')),
     ('file.ext', '/wiki/start/sub/deep',
         ('wiki', 'start', 'sub/deep/file.ext')),

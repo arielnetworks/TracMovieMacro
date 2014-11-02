@@ -88,6 +88,8 @@ def parse_imagemacro_style(url, path_info):
     (u'ticket', u'1', u'file.ext')
     >>> parse_imagemacro_style(u'ticket:1:file.ext', u'/ticket/1')
     (u'ticket', u'1', u'file.ext')
+    >>> parse_imagemacro_style(u'ticket:2:file.ext', u'/ticket/1')
+    (u'ticket', u'2', u'file.ext')
     >>> parse_imagemacro_style(u'file.ext', u'/wiki/start')
     (u'wiki', u'start', u'file.ext')
     >>> parse_imagemacro_style(u'file.ext', u'/wiki/start/sub/deep')
@@ -106,6 +108,9 @@ def parse_imagemacro_style(url, path_info):
         _path = '/'.join(_path_info[2:])
 
     _url = url.split(':')
+    if scheme == 'ticket' and len(_url) == 3:
+        netloc = _url[1]
+
     path = _url[-1]
     if scheme != 'ticket':
         if len(_url) == 1:
