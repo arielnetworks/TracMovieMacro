@@ -4,7 +4,6 @@
 
     Embeds various online movies.
 """
-import json
 import mimetypes
 from datetime import datetime
 from os.path import join as pathjoin
@@ -15,6 +14,7 @@ from pkg_resources import resource_filename
 from trac.core import TracError
 from trac.core import implements
 from trac.resource import Resource, get_resource_url
+from trac.util.presentation import to_json
 from trac.web.api import IRequestFilter
 from trac.web.chrome import ITemplateProvider, add_script, add_stylesheet
 from trac.wiki.api import parse_args
@@ -126,7 +126,7 @@ class MovieMacro(WikiMacroBase):
                     $(function() {
                         $('#%s').flowplayer(%s);
                     });
-                """ % (player_id, json.JSONEncoder().encode(query_dict))
+                """ % (player_id, to_json(query_dict))
                 ),
             ]),
             **attrs
