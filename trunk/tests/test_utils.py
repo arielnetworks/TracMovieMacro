@@ -5,6 +5,7 @@ from movie.utils import string_keys
 from movie.utils import _xform_to_dict
 from movie.utils import xform_style
 from movie.utils import xform_query
+from movie.utils import set_default_parameters
 
 
 @pytest.mark.parametrize(('d', 'expected'), [
@@ -55,3 +56,16 @@ def test_xform_query_simple(query, expected):
 ])
 def test_xform_query_multi(query):
     assert query == xform_query(xform_query(query))
+
+
+@pytest.mark.parametrize(('param', 'default', 'kwargs', 'expected'), [
+    (
+        {'width': '320', 'test': '1'},
+        {'width': '640', 'height': '360', 'test': '0', 'p': None},
+        {'test': '2'},
+        {'width': '320', 'height': '360', 'test': '2'}
+    ),
+])
+def test_set_default_parameters(param, default, kwargs, expected):
+    set_default_parameters(param, default, **kwargs)
+    assert expected == param

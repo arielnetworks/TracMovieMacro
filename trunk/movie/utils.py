@@ -62,3 +62,20 @@ def xform_query(query):
         return '&'.join(['%s=%s' % (k, v) for k, v in query.items()])
     else:
         return _xform_to_dict(query, '&', '=')
+
+
+def set_default_parameters(param, default, **kwargs):
+    """
+    >>> param = {'width': '320', 'test': '1'}
+    >>> default = {'width': '640', 'height': '360', 'test': '0', 'p': None}
+    >>> set_default_parameters(param, default, test='2')
+    >>> sorted(param.items())
+    [('height', '360'), ('test', '2'), ('width', '320')]
+    """
+    for key, value in default.items():
+        if param.get(key) is None:
+            if value is not None:
+                param[key] = value
+    if kwargs:
+        for key, value in kwargs.items():
+            param[key] = value
