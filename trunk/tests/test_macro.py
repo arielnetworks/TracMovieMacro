@@ -30,3 +30,20 @@ class Request(object):
 def test_get_absolute_url(movie_macro, url, expected):
     req = Request(abs_href=Href(BASE_HREF))
     assert expected == movie_macro._get_absolute_url(req, url)
+
+
+@pytest.mark.parametrize(('url', 'path_info', 'expected'), [
+    ('sample.webm', u'/ticket/123',
+     '%s/raw-attachment/ticket/123/sample.webm' % BASE_HREF),
+    ('ticket:123:sample.webm', u'/ticket/123',
+     '%s/raw-attachment/ticket/123/sample.webm' % BASE_HREF),
+    ('wiki:sample.mp4', u'/wiki/page',
+     '%s/raw-attachment/wiki/page/sample.mp4' % BASE_HREF),
+    ('wiki:page/sample.mp4', u'/wiki/page',
+     '%s/raw-attachment/wiki/page/sample.mp4' % BASE_HREF),
+    ('wiki:test/movie/sub/sample.mp4', u'/wiki/test/movie/sub',
+     '%s/raw-attachment/wiki/test/movie/sub/sample.mp4' % BASE_HREF),
+])
+def test_get_absolute_url_simple(movie_macro, url, path_info, expected):
+    req = Request(abs_href=Href(BASE_HREF), path_info=path_info)
+    assert expected == movie_macro._get_absolute_url(req, url)

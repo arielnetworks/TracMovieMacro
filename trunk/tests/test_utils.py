@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from movie.utils import string_keys
 from movie.utils import _xform_to_dict
-from movie.utils import xform_style
-from movie.utils import xform_query
+from movie.utils import parse_imagemacro_style
 from movie.utils import set_default_parameters
+from movie.utils import string_keys
+from movie.utils import xform_query
+from movie.utils import xform_style
 
 
 @pytest.mark.parametrize(('d', 'expected'), [
@@ -69,3 +70,17 @@ def test_xform_query_multi(query):
 def test_set_default_parameters(param, default, kwargs, expected):
     set_default_parameters(param, default, **kwargs)
     assert expected == param
+
+
+@pytest.mark.parametrize(('url', 'path_info', 'expected'), [
+    ('file.ext', '/ticket/1', ('ticket', '1', 'file.ext')),
+    ('ticket:1:file.ext', '/ticket/1', ('ticket', '1', 'file.ext')),
+    ('file.ext', '/wiki/start', ('wiki', 'start', 'file.ext')),
+    ('file.ext', '/wiki/start/sub/deep',
+        ('wiki', 'start', 'sub/deep/file.ext')),
+    ('wiki:start/sub/deep/file.ext', '/wiki/start/sub/deep',
+        ('wiki', 'start', 'sub/deep/file.ext')),
+    ('wiki:start/file.ext', '/wiki/start', ('wiki', 'start', 'file.ext')),
+])
+def test_parse_imagemacro_style(url, path_info, expected):
+    assert expected == parse_imagemacro_style(url, path_info)

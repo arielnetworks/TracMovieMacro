@@ -19,7 +19,7 @@ from trac.wiki.api import parse_args
 from trac.wiki.macros import WikiMacroBase
 
 from model import MovieMacroConfig
-from utils import string_keys, xform_style
+from utils import parse_imagemacro_style, string_keys, xform_style
 from video_sites import get_embed_video_site_player
 
 
@@ -92,8 +92,8 @@ class MovieMacro(WikiMacroBase):
         return handler
 
     def post_process_request(self, req, template, data, content_type):
-        if req.path_info.startswith('/ticket/') or \
-           req.path_info.startswith('/wiki/'):
+        path = req.path_info
+        if path.startswith('/ticket/') or path.startswith('/wiki'):
             add_script(req, EMBED_PATH_FLOWPLAYER['js'])
             add_stylesheet(req, EMBED_PATH_FLOWPLAYER['css'])
         return template, data, content_type
@@ -112,23 +112,30 @@ class MovieMacro(WikiMacroBase):
         {htdocs,chrome,ticket,wiki,source} simply return the url if given with
         {http,https,ftp} schemes.
 
+        Also support restricted ImageMacro format style.
+        It can be specified only filename on ticket or wiki page.
+
         Examples:
             http://example.com/filename.ext
                 ie. http://www.google.com/logo.jpg
 
             chrome://site/filename.ext
             htdocs://img/filename.ext
+            htdocs:/img/filename.ext
                 note: `chrome` is an alias for `htdocs`
 
-            ticket://number/attachment.pdf
-                ie. ticket://123/specification.pdf
+            ticket://123/specification.pdf
+            ticket:123:specification.pdf
 
             wiki://WikiWord/attachment.jpg
+            wiki:WikiWord/attachment.jpg
 
-            source://changeset/path/filename.ext
-                ie. source://1024/trunk/docs/README
+            source://1024/path/filename.ext
         """
-        scheme, netloc, path, query, params, fragment = urlparse(url)
+        if '://' in url:
+            scheme, netloc, path, query, params, fragment = urlparse(url)
+        else:  # suppose ImageMacro style
+            scheme, netloc, path = parse_imagemacro_style(url, req.path_info)
 
         if scheme in ('htdocs', 'chrome'):
             return req.abs_href.chrome(netloc + path)
