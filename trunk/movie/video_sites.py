@@ -108,6 +108,6 @@ def embed_vimeo(scheme, netloc, path, query, style):
 
 VIDEO_SHARING_SITES = {
     ('www.youtube.com', 'www.youtube-nocookie.com'): embed_youtube,
-    ('www.metacafe.com'): embed_metacafe,
+    ('www.metacafe.com',): embed_metacafe,
     ('vimeo.com', 'www.vimeo.com'): embed_vimeo,
 }
