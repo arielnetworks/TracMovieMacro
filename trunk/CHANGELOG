@@ -1,0 +1,16 @@
+
+ChangeLog
+=========
+
+0.3 (2014-11-05)
+------------------
+
+* Change license from BSD to Apache License 2.0
+* Update Flowplayer 5.5.0
+  - Support to play mp4/webm format
+* Refactoring to be able to maintain
+
+0.2 (2014-10-30)
+------------------
+
+* Initial PyPI package as a checkpoint

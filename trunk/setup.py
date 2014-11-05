@@ -6,7 +6,7 @@ from setuptools import setup
 try:
     long_description = ''.join([
         open('README.md').read(),
-        open('changelog').read(),
+        open('CHANGELOG').read(),
     ])
 except:
     long_description = ''
@@ -31,7 +31,7 @@ setup(
     maintainer='Tetsuya Morimoto',
     maintainer_email='tetsuya dot morimoto at gmail dot com',
     url='http://trac-hacks.org/wiki/MovieMacro/',
-    license='BSD',
+    license="Apache License 2.0",
     keywords='trac plugin movie video html5 macro',
     platforms=['unix', 'linux', 'osx', 'cygwin', 'win32'],
     install_requires=['Trac >= 0.12'],
@@ -39,7 +39,7 @@ setup(
         'Framework :: Trac',
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: Apache Software License',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
