@@ -96,11 +96,14 @@ class MovieMacro(WikiMacroBase):
         if site_player is not None:
             return site_player(scheme, netloc, path, query, style)
 
+        parse_result = urlparse(args[0])
+        query = parse_result.query
         if config.splash:
             splash_url = pathjoin(formatter.href.chrome(), config.splash)
             splash_style = 'background-color:#777; '\
                            'background-image:url(%s);' % splash_url
             style['style'] = splash_style
+            query += '&splash=true'
         return self.embed_player(formatter, url, query, style)
 
     def embed_player(self, formatter, url, query, style):
